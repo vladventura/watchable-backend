@@ -1,5 +1,17 @@
 const NEW_VIDEO_ADDED = "new-video-added";
 const VIDEO_REMOVED = "video-removed";
+const CREATE_ROOM = "create-room";
+const ROOM_CREATED = "room-created";
+const JOIN_ROOM = "join-room";
+const JOINED_SUCCESS = "joined-success";
+const REMOTE_JOINED = "remote-joined";
+const REMOVE_VIDEO = "remove-video";
+const ROOM_NOT_FOUND = "room-not-found";
+const ADD_VIDEO = "add-video";
+const ADD_VIDEO_FAILED = "add-video-failed";
+const FINISHED_CURRENT_VIDEO = "finished-current-video";
+const GET_VIDEOS = "get-videos";
+
 const {
   addVideo,
   createRoom,
@@ -8,6 +20,8 @@ const {
   joinRoom,
   removeVideo,
   popVideo,
+  getRooms,
+  deleteRoom,
 } = require("./dbHandler");
 const { customAlphabet } = require("nanoid");
 
@@ -16,48 +30,67 @@ const generateReducedId = () => {
   return nanoid();
 };
 
-const roomInfoInitial = {
-  id: "",
-  reducedId: "",
-};
-
 const socketHandler = (io) => {
   io.on("connection", (socket) => {
-    socket.on("create-room", () => {
-      let roomInfo = { ...roomInfoInitial };
+    console.log("Connection received, socket id: ", socket.id);
+    socket.on(CREATE_ROOM, () => {
+      let roomInfo = {
+        id: "",
+        reducedId: "",
+      };
       roomInfo.id = socket.id;
       roomInfo.reducedId = generateReducedId();
       createRoom(roomInfo);
       socket.join(roomInfo.id);
-      socket.emit("room-created", roomInfo);
+      socket.emit(ROOM_CREATED, roomInfo);
+      io.to(roomInfo.id).emit(GET_VIDEOS, getVideos(roomInfo.id));
+      console.log(
+        "Room created, room info: ",
+        roomInfo,
+        getVideos(roomInfo.id),
+        getRooms()
+      );
     });
 
-    socket.on("join-room", (reducedId) => {
+    socket.on(JOIN_ROOM, (reducedId) => {
       const roomInfo = findRoom(reducedId);
-      console.log(roomInfo);
+      console.log(roomInfo.toJson());
       if (roomInfo) {
         joinRoom(socket.id, roomInfo);
         socket.join(roomInfo.id);
-        socket.emit("joined-success", roomInfo);
-        io.to(roomInfo.id).emit("remote-joined");
+        socket.emit(JOINED_SUCCESS, roomInfo.toJson());
+        io.to(roomInfo.id).emit(REMOTE_JOINED);
       } else {
-        socket.emit("room-not-found");
+        socket.emit(ROOM_NOT_FOUND);
       }
     });
 
-    socket.on("remove-video", (video) => {
-      removeVideo(video);
+    socket.on(REMOVE_VIDEO, (video) => {
+      removeVideo(video, socket.id);
     });
-    socket.on("add-video", (video) => {
-      console.log("Adding video, ", video);
-      addVideo(video);
-      io.emit("new-video-added", getVideos());
+
+    socket.on(ADD_VIDEO, (video) => {
+      const socketRoomsIterator = socket.rooms.values();
+      socketRoomsIterator.next();
+      const playerRoomId = socketRoomsIterator.next().value;
+      if (addVideo(video, playerRoomId)) {
+        console.log("Added video: ", video, " to room: ", playerRoomId);
+        io.to(playerRoomId).emit(NEW_VIDEO_ADDED, getVideos(playerRoomId));
+      } else {
+        console.log("Failed to add video: ", video, " to room: ", playerRoomId);
+        socket.emit(ADD_VIDEO_FAILED);
+      }
     });
-    socket.on("finished-current-video", popVideo);
+
+    socket.on(FINISHED_CURRENT_VIDEO, () => {
+      console.log("Popping video from room: ", socket.id);
+      popVideo(socket.id);
+    });
     socket.on("disconnect", () => {
-      console.log("GOODBYE BRUH");
+      console.log("Socket disconnected, socket id:", socket.id);
+      deleteRoom(socket.id);
+      console.log("Current state of rooms: ", getRooms());
     });
-    socket.emit("get-videos", getVideos());
   });
 };
 

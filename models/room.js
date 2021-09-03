@@ -1,26 +1,26 @@
 class Room {
-  videos;
-  remotes;
-  id;
-  reducedId;
+  #videos;
+  #remotes;
+  #id;
+  #reducedId;
   constructor(id, reducedId) {
-    this.videos = [];
-    this.remotes = [];
-    this.id = id;
-    this.reducedId = reducedId;
+    this.#videos = [];
+    this.#remotes = [];
+    this.#id = id;
+    this.#reducedId = reducedId;
   }
 
   get videos() {
-    return this.videos;
+    return this.#videos;
   }
   get remotes() {
-    return this.remotes;
+    return this.#remotes;
   }
   get id() {
-    return this.id;
+    return this.#id;
   }
   get reducedId() {
-    return this.reducedId;
+    return this.#reducedId;
   }
 
   addVideo(video) {

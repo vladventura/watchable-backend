@@ -1,52 +1,78 @@
+const Room = require("./models/room");
 let rooms = [];
-const roomInitial = {
-  id: "",
-  reducedId: "",
-  videos: [],
-  remotes: [],
-};
-let videos = [];
 
 const createRoom = (roomInfo) => {
-  const newRoom = {
-    ...roomInitial,
-    id: roomInfo.id,
-    reducedId: roomInfo.reducedId,
-  };
+  const newRoom = new Room(roomInfo.id, roomInfo.reducedId);
+  console.log(newRoom.toJson());
   rooms.push(newRoom);
 };
 
 const findRoom = (reducedId) => {
-  console.log(rooms);
   let r;
-  rooms.forEach((room) => {
-    console.log(room.reducedId === reducedId);
+  rooms.every((room) => {
+    console.log(
+      "Find Room by Reduced ID Assertion: ",
+      room.reducedId === reducedId
+    );
     if (room.reducedId === reducedId) {
       r = room;
-      return;
-    }
+      return false;
+    } else return true;
   });
-  console.log(r);
+  return r;
+};
+
+const findRoomByMainId = (playerRoomId) => {
+  let r;
+
+  rooms.every((room) => {
+    console.log("Find Room by Main ID Assertion: ", room.id === playerRoomId);
+    if (room.id === playerRoomId) {
+      r = room;
+      return false;
+    } else return true;
+  });
   return r;
 };
 
 const joinRoom = (remoteId, roomInfo) => {
-  roomInfo.remotes = [...roomInfo.remotes, remoteId];
+  roomInfo.addRemote(remoteId);
 };
 
-const addVideo = (video) => {
-  if (!videos.find((vid) => vid.id === video.id)) videos.push(video);
+const addVideo = (video, playerRoomId) => {
+  const room = findRoomByMainId(playerRoomId);
+  console.log("Room to push this video to", room.toJson());
+  if (room) return room.addVideo(video);
 };
 
-const getVideos = () => {
-  return videos;
+const getVideos = (playerRoomId) => {
+  const room = findRoomByMainId(playerRoomId);
+  console.log("Get videos on the current room: ", room);
+  if (room) return room.videos;
+  return [];
 };
 
-const removeVideo = (video) => {
-  videos = videos.filter((vid) => vid.id != video.id);
+const removeVideo = (video, playerRoomId) => {
+  const room = findRoomByMainId(playerRoomId);
+  if (room) room.removeVideo(video);
 };
 
-const popVideo = () => videos.shift();
+const popVideo = (playerRoomId) => {
+  const room = findRoomByMainId(playerRoomId);
+  if (room) room.popVideo();
+};
+
+const getRooms = () => rooms;
+
+const deleteRoom = (playerRoomId) => {
+  for (x = rooms.length - 1; x >= 0; --x) {
+    if (rooms[x].id === playerRoomId) {
+      // delete rooms[x];
+      rooms.splice(x, 1);
+      break;
+    }
+  }
+};
 
 module.exports = {
   addVideo,
@@ -56,4 +82,6 @@ module.exports = {
   joinRoom,
   removeVideo,
   popVideo,
+  getRooms,
+  deleteRoom,
 };

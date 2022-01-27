@@ -41,14 +41,18 @@ const joinRoom = (remoteId, roomInfo) => {
 
 const addVideo = (video, playerRoomId) => {
   const room = findRoomByMainId(playerRoomId);
-  console.log("Room to push this video to", room.toJson());
-  if (room) return room.addVideo(video);
+  if (room) {
+    console.log("Room to push this video to", room.toJson());
+    return room.addVideo(video);
+  }
 };
 
 const getVideos = (playerRoomId) => {
   const room = findRoomByMainId(playerRoomId);
-  console.log("Get videos on the current room: ", room);
-  if (room) return room.videos;
+  if (room) {
+    console.log("Get videos on the current room: ", room);
+    return room.videos;
+  }
   return [];
 };
 

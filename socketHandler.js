@@ -54,8 +54,8 @@ const socketHandler = (io) => {
 
     socket.on(JOIN_ROOM, (reducedId) => {
       const roomInfo = findRoom(reducedId);
-      console.log(roomInfo.toJson());
       if (roomInfo) {
+        console.log(roomInfo.toJson());
         joinRoom(socket.id, roomInfo);
         socket.join(roomInfo.id);
         socket.emit(JOINED_SUCCESS, roomInfo.toJson());
